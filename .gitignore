@@ -1,5 +1,2 @@
-!*/
-!.gitignore
-
-$GIT_DIR/tests/*
-$GIT_DIR/VLBdotPy/__pycache__/*
+tests/*
+VLBdotPy/__pycache__/*
