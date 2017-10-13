@@ -26,6 +26,7 @@ class InvalidArgumentError (VLBdotPyError):
 
 
 class SearchObject:
+    """Internal structure class"""
     MAX_PAGE_SIZE = 250
 
     def __init__(self, session, data, long_json = False): # session, search, size = MAX_PAGE_SIZE, status = "active", direction = "desc", page = None, sort = None, source = None):
@@ -70,26 +71,28 @@ class SearchObject:
 
 
 class SearchBuilder:
+    """Class to safely build a VLB search string. Should be used with Client.search()"""
 
-    def __init__(self, format_str, **kwargs):
+    def __init__(self, format_str, *args):
         if (not isinstance(format_str, str)):
             raise InvalidArgumentError("Argument format_str must be of type string!")
 
         query = ""
-        args = [Client.sanitize_search(x) for x in kwargs]
+        args = [Client.sanitize_search(x) for x in args]
 
-        opened = [m.start() for m in re.finditer('\{', format_str)]
-        opened = [x for x in opened if x != 0 and opened[x-1] != "\\"]
-        closed = [m.start() for m in re.finditer('\}', format_str)]
-        closed = [x for x in closed if x != 0 and closed[x-1] != "\\"]
+        points = [m.start() for m in re.finditer('\{}', format_str)]
+        points = [x for x in points if x != 0 and format_str[x-1] != "\\"]
 
-        if (len(opened) != len(closed)):
-            raise InvalidArgumentError("Escape { or } using a \\ in format_str if you have to use them!")
+        if (len(points) != len(args)):
+            raise InvalidArgumentError("You need to provide exactly as many argumnents as '{}'!")
 
-        for i, open, close in enumerate(zip(opened, closed)): # WIE?
-            query += format_str[open]
-            query += args[i]
+        try:
+            # query = format_str.replace("{}", "%s")
+            query = format_str.format(*args)
+        except Exception as e:
+            raise InternalError(f"An error occurred while formatting string! Error:\n{e}")
 
+        self.query_string = query
 
 
 class Client:
@@ -100,17 +103,12 @@ class Client:
     def __init__(self, username, password):
         """Init Function"""
         creds = {'username': username, 'password': password}
-        # result = requests.post("https://api.vlb.de/api/v1/login", data=json.dumps(creds))
+        result = requests.post("https://api.vlb.de/api/v1/login", data=json.dumps(creds))
 
-        #if (result.status_code in Client.ERROR_CODES):
-        #    result_json = result.json()
-        #    if (result_json["error"]):
-        #        raise BadCredentialsError(result_json["error_description"])
-        #    else:
-        #        raise InternalError("Although the response contains an error status code, it doesn't contain the 'error' field!")
+        if (result.status_code in Client.ERROR_CODES):
+            raise InternalError(f"Response returned with error code {result.status_code}")
 
-        #token = result.text
-        token = "223dc49e-024c-473f-b02d-5e8925833704"
+        token = result.text
         self.session = requests.session()
         self.session.headers["Authorization"] = "Bearer " + token
         self.session.headers["Content-Type"] = "application/json"
@@ -165,20 +163,20 @@ class Client:
         self.last_searchObj = SearchObject(self.session, data, long_json)
 
         result = self.last_searchObj.result
+        return result["content"]
+        #if (int(result["numberOfElements"]) == 0):
+        #    return {}
+        #else:
 
-        if (int(result["numberOfElements"]) == 0):
-            return None
-        else:
-            return result["content"]
+
+    def stack_search(self, isbns):
+        pass
 
     def get_next_page(self):
         """Fetches the next result page of the last search"""
         self.last_searchObj.next()
         result = self.last_searchObj.result
-        if (int(result["numberOfElements"]) == 0):
-            return None
-        else:
-            return result["content"]
+        return result["content"]
 
     def get_by_id(self, id, id_type=None, long_json=False):
         """Fetches a book by its ID
