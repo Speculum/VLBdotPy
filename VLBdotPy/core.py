@@ -29,7 +29,7 @@ class SearchObject:
     """Internal structure class"""
     MAX_PAGE_SIZE = 250
 
-    def __init__(self, session, data, long_json = False): # session, search, size = MAX_PAGE_SIZE, status = "active", direction = "desc", page = None, sort = None, source = None):
+    def __init__(self, session, data, long_json = False):
         if ("next_page" not in vars()): self.page = 1
         # if (data.get("page") != None): self.next_page = data.get("page")
         # else: data["page"] = self.next_page
@@ -164,13 +164,26 @@ class Client:
 
         result = self.last_searchObj.result
         return result["content"]
-        #if (int(result["numberOfElements"]) == 0):
-        #    return {}
-        #else:
 
 
     def stack_search(self, isbns):
-        pass
+        query = """{
+                    "content": [
+        """
+
+        for isbn in isbns:
+            query += """
+                        {
+                            "isbn": %s
+                        }
+            """ % isbn
+
+        query += """
+                    ]
+                }
+        """
+
+
 
     def get_next_page(self):
         """Fetches the next result page of the last search"""
