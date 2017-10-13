@@ -1,2 +1,3 @@
 tests/*
 VLBdotPy/__pycache__/*
+.idea/*
