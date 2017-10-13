@@ -99,6 +99,7 @@ class Client:
     """VLBdotPy's Client Class"""
     ERROR_CODES = [400, 401, 403, 404, 500]
     ID_TYPES = ["gtin", "isbn13", "ean"]
+    SIZE_TYPES = ["s", "m", "l"]
 
     def __init__(self, username, password):
         """Init Function"""
@@ -184,14 +185,13 @@ class Client:
         """
 
 
-
     def get_next_page(self):
         """Fetches the next result page of the last search"""
         self.last_searchObj.next()
         result = self.last_searchObj.result
         return result["content"]
 
-    def get_by_id(self, id, id_type=None, long_json=False):
+    def get_book(self, id, id_type = None, long_json = False):
         """Fetches a book by its ID
             Args:
                 - id: the book's ID
@@ -220,6 +220,37 @@ class Client:
 
         return result
 
-    # def for cover and media stuff
+    def get_cover(self, id, size = None):
+        """Fetches a cover by the book's ID
+                    Args:
+                        - id: the book's ID
+                        - size (optional): the size of the cover
+                        - long_json (optional): returns long json if True
+                """
+
+        url = f"https://api.vlb.de/api/v1/cover/{id}"
+
+        if (size != None):
+            if (size not in Client.SIZE_TYPES):
+                raise InvalidArgumentError("Argument id_type must be either 's', 'm' or 'l'")
+            else:
+                url += f"/{size}"
+
+        self.session.headers["Accept"] = "application/json"
+        result_raw = self.session.get(url)
+
+        if (result_raw.status_code in Client.ERROR_CODES):
+            raise InternalError(f"Response returned with error code {result_raw.status_code}\nRequest url: {url}")
+
+        try:
+            result = result_raw.json()
+            if (result.get("error") is not None):
+                raise InternalError(result["error_description"])
+            else:
+                return result
+        except  json.decoder.JSONDecodeError:
+            return result_raw.raw # get binary
+
+    # def for media stuff
 
     # def index, publisher,     
