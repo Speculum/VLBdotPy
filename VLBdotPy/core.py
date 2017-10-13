@@ -25,7 +25,7 @@ class InvalidArgumentError (VLBdotPyError):
     pass
 
 
-class SearchObject ():
+class SearchObject:
     MAX_PAGE_SIZE = 250
 
     def __init__(self, session, data, long_json = False): # session, search, size = MAX_PAGE_SIZE, status = "active", direction = "desc", page = None, sort = None, source = None):
@@ -69,6 +69,29 @@ class SearchObject ():
             self.total_pages = self.result["totalPages"]
 
 
+class SearchBuilder:
+
+    def __init__(self, format_str, **kwargs):
+        if (not isinstance(format_str, str)):
+            raise InvalidArgumentError("Argument format_str must be of type string!")
+
+        query = ""
+        args = [Client.sanitize_search(x) for x in kwargs]
+
+        opened = [m.start() for m in re.finditer('\{', format_str)]
+        opened = [x for x in opened if x != 0 and opened[x-1] != "\\"]
+        closed = [m.start() for m in re.finditer('\}', format_str)]
+        closed = [x for x in closed if x != 0 and closed[x-1] != "\\"]
+
+        if (len(opened) != len(closed)):
+            raise InvalidArgumentError("Escape { or } using a \\ in format_str if you have to use them!")
+
+        for i, open, close in enumerate(zip(opened, closed)): # WIE?
+            query += format_str[open]
+            query += args[i]
+
+
+
 class Client:
     """VLBdotPy's Client Class"""
     ERROR_CODES = [400, 401, 403, 404, 500]
@@ -96,7 +119,7 @@ class Client:
 
 
     @staticmethod
-    def sanitize(string):
+    def sanitize_search(string):
         string = re.sub(" und ", " \"und\" ", string, flags=re.IGNORECASE)
         string = re.sub(" and ", " \"and\" ", string, flags=re.IGNORECASE)
         string = re.sub(" oder ", " \"oder\" ", string, flags=re.IGNORECASE)
@@ -188,3 +211,4 @@ class Client:
 
     # def for cover and media stuff
 
+    # def index, publisher,     
