@@ -140,9 +140,10 @@ class SearchBuilder:
 
 class Client:
     """VLBdotPy's Client Class"""
+
     ERROR_CODES = [400, 401, 403, 404, 500]
 
-    def __init__(self, username, password, token = None):
+    def __init__(self, username, password, token = None, print_token = False):
         """Init Function"""
 
         if (token == None):
@@ -155,6 +156,8 @@ class Client:
             token = result.text
         else:
             token = token
+
+        if (print_token): print(token)
 
         self.session = requests.session()
         self.session.headers["Authorization"] = "Bearer " + token
@@ -322,6 +325,26 @@ class Client:
         except AttributeError:
             pass
 
-        # GET REQUESTED TYPE
+        fields = [x for x in result if x.get("type") == type]
 
-    # def index, publisher
+        if (len(fields) == 0):
+            return None
+
+        urls = []
+        types = []
+
+        for field in fields:
+            url = field["url"]
+
+            result_raw = self.session.get(url)
+
+            if (result_raw.status_code in Client.ERROR_CODES):
+                raise InternalError(f"Response for media url returned with error code {result_raw.status_code}\nRequest url: {url}")
+
+            urls.append(url)
+            types.append(result_raw.headers["Content-Type"].split(";")[0])
+
+        return len(fields), zip(types, urls)
+
+
+    # TODO def index, publisher
