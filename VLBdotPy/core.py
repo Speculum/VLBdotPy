@@ -19,10 +19,53 @@ class InternalError (VLBdotPyError):
 
 class MaximumExceededError (VLBdotPyError):
     """Raised when some number exceeded a maximum"""
+    pass
 
 
 class InvalidArgumentError (VLBdotPyError):
+    """Raised when an invalid arguemtn was passed to a function"""
     pass
+
+
+class CoverSizeTypes:
+    """Available sizes for get_cover method"""
+    LARGE = "l"
+    MEDIUM = "m"
+    SMALL = "s"
+
+
+class MediaTypes:
+    """Available media types for get_media method"""
+    FRONTCOVER = "FRONTCOVER"
+    BACKCOVER = "BACKCOVER"
+    INLAYCOVER = "INLAYCOVER"
+    INSIDE_VIEW = "INSIDE_VIEW"
+    TABLE_OF_CONTENT = "TABLE_OF_CONTENT"
+    ANNOTATION = "ANNOTATION"
+    MAIN_DESCRIPTION = "MAIN_DESCRIPTION"
+    AUTHOR_IMAGE = "AUTHOR_IMAGE"
+    AUDIO_SAMPLE = "AUDIO_SAMPLE"
+    PREVIEW_SAMPLE = "PREVIEW_SAMPLE"
+    VIDEO_CLIP = "VIDEO_CLIP"
+    REVIEW_TEXT = "REVIEW_TEXT"
+    REVIEW_QUOTE = "REVIEW_QUOTE"
+    FLAP_COPY = "FLAP_COPY"
+    FIRST_CHAPTER = "FIRST_CHAPTER"
+    INTRODUCTION = "INTRODUCTION"
+    LONG_DESCRIPTION = "LONG_DESCRIPTION"
+    PRODUCT_INDEX = "PRODUCT_INDEX"
+    PUBLISHER_LOGO = "PUBLISHER_LOGO"
+    IMPRINT_LOGO = "IMPRINT_LOGO"
+    AUTHOR_DETAILS = "AUTHOR_DETAILS"
+    AUTHOR_INTERVIEW = "AUTHOR_INTERVIEW"
+    AUTHOR_READING = "AUTHOR_READING"
+
+
+class IdTypes:
+    """Avaible id types for get_book method"""
+    GTIN = "gtin"
+    ISBN = "isbn13"
+    EAN = "ean"
 
 
 class SearchObject:
@@ -98,8 +141,6 @@ class SearchBuilder:
 class Client:
     """VLBdotPy's Client Class"""
     ERROR_CODES = [400, 401, 403, 404, 500]
-    ID_TYPES = ["gtin", "isbn13", "ean"]
-    SIZE_TYPES = ["s", "m", "l"]
 
     def __init__(self, username, password, token = None):
         """Init Function"""
@@ -207,8 +248,8 @@ class Client:
         url = f"https://api.vlb.de/api/v1/product/{id}"
 
         if (id_type != None):
-            if (id_type not in Client.ID_TYPES):
-                raise InvalidArgumentError("Argument id_type must be either 'gtin', 'isbn13' or 'ean'")
+            if (id_type not in [y for x, y in IdTypes.__dict__.items() if x.isupper()]):
+                raise InvalidArgumentError("Argument id_type must be of type IdTypes.*")
             else:
                 url += f"/{id_type}"
 
@@ -227,16 +268,16 @@ class Client:
 
     def get_cover(self, id, size = None):
         """Fetches a cover by the book's ID
-                    Args:
-                        - id: the book's ID
-                        - size (optional): the size of the cover
-                """
+            Args:
+                - id: the book's ID
+                - size (optional): the size of the cover
+        """
 
         url = f"https://api.vlb.de/api/v1/cover/{id}"
 
         if (size != None):
-            if (size not in Client.SIZE_TYPES):
-                raise InvalidArgumentError("Argument id_type must be either 's', 'm' or 'l'")
+            if (size not in [y for x, y in CoverSizeTypes.__dict__.items() if x.isupper()]):
+                raise InvalidArgumentError("Argument size must be of type CoverSizeTypes.*")
             else:
                 url += f"/{size}"
 
@@ -255,6 +296,32 @@ class Client:
         except  json.decoder.JSONDecodeError:
             return result_raw.content
 
-    # def for media stuff
+    def get_media(self, id, type):
+        """Returns various media files for the product using the given id
+            Args:
+                - id: the product's id
+                - type: the media type that should be returned
+        """
+
+        url = f"http://api.vlb.de/api/v1/asset/mmo/{id}"
+
+        if (type not in [y for x, y in MediaTypes.__dict__.items() if x.isupper()]):
+            raise InvalidArgumentError("Argument type must be of type MediaTypes.*")
+
+        self.session.headers["Accept"] = "application/json"
+        result_raw = self.session.get(url)
+
+        if (result_raw.status_code in Client.ERROR_CODES):
+            raise InternalError(f"Response returned with error code {result_raw.status_code}\nRequest url: {url}")
+
+        result = result_raw.json()
+
+        try:
+            if (result.get("error") is not None):
+                raise InternalError(result["error_description"])
+        except AttributeError:
+            pass
+
+        # GET REQUESTED TYPE
 
     # def index, publisher
