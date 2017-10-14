@@ -101,15 +101,20 @@ class Client:
     ID_TYPES = ["gtin", "isbn13", "ean"]
     SIZE_TYPES = ["s", "m", "l"]
 
-    def __init__(self, username, password):
+    def __init__(self, username, password, token = None):
         """Init Function"""
-        creds = {'username': username, 'password': password}
-        result = requests.post("https://api.vlb.de/api/v1/login", data=json.dumps(creds))
 
-        if (result.status_code in Client.ERROR_CODES):
-            raise InternalError(f"Response returned with error code {result.status_code}")
+        if (token == None):
+            creds = {'username': username, 'password': password}
+            result = requests.post("https://api.vlb.de/api/v1/login", data=json.dumps(creds))
 
-        token = result.text
+            if (result.status_code in Client.ERROR_CODES):
+                raise InternalError(f"Response returned with error code {result.status_code}")
+
+            token = result.text
+        else:
+            token = token
+
         self.session = requests.session()
         self.session.headers["Authorization"] = "Bearer " + token
         self.session.headers["Content-Type"] = "application/json"

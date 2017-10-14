@@ -1,3 +1,4 @@
 tests/*
 VLBdotPy/__pycache__/*
 .idea/*
+conf.json
