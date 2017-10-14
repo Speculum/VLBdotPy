@@ -225,7 +225,6 @@ class Client:
                     Args:
                         - id: the book's ID
                         - size (optional): the size of the cover
-                        - long_json (optional): returns long json if True
                 """
 
         url = f"https://api.vlb.de/api/v1/cover/{id}"
@@ -247,10 +246,10 @@ class Client:
             if (result.get("error") is not None):
                 raise InternalError(result["error_description"])
             else:
-                return result
+                raise InternalError("VLB.de returned a JSON string although it should not do it regarding the url!")
         except  json.decoder.JSONDecodeError:
-            return result_raw.raw # get binary
+            return result_raw.content
 
     # def for media stuff
 
-    # def index, publisher,     
+    # def index, publisher
