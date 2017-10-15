@@ -60,6 +60,9 @@ class MediaTypes:
     AUTHOR_INTERVIEW = "AUTHOR_INTERVIEW"
     AUTHOR_READING = "AUTHOR_READING"
 
+    # application/epub+zip
+    # image/jpeg
+
 
 class IdTypes:
     """Avaible id types for get_book method"""
@@ -176,32 +179,6 @@ class Client:
         # self.session.headers["Accept"] = "application/json-short"
         self.session.headers["User-Agent"] = "VLBdotPy"
 
-
-    @staticmethod
-    def sanitize_search(string):
-        string = re.sub(" und ", " \"und\" ", string, flags=re.IGNORECASE)
-        string = re.sub(" and ", " \"and\" ", string, flags=re.IGNORECASE)
-        string = re.sub(" oder ", " \"oder\" ", string, flags=re.IGNORECASE)
-        string = re.sub(" or ", " \"or\" ", string, flags=re.IGNORECASE)
-        string = re.sub(" nicht ", " \"nicht\" ", string, flags=re.IGNORECASE)
-        string = re.sub(" not ", " \"not\" ", string, flags=re.IGNORECASE)
-
-        string = re.sub("und ", "\"und\" ", string, flags=re.IGNORECASE)
-        string = re.sub("and ", "\"and\" ", string, flags=re.IGNORECASE)
-        string = re.sub("oder ", "\"oder\" ", string, flags=re.IGNORECASE)
-        string = re.sub("or ", "\"or\" ", string, flags=re.IGNORECASE)
-        string = re.sub("nicht ", "\"nicht\" ", string, flags=re.IGNORECASE)
-        string = re.sub("not ", "\"not\" ", string, flags=re.IGNORECASE)
-
-        string = re.sub(" und", " \"und\"", string, flags=re.IGNORECASE)
-        string = re.sub(" and", " \"and\"", string, flags=re.IGNORECASE)
-        string = re.sub(" oder", " \"oder\"", string, flags=re.IGNORECASE)
-        string = re.sub(" or", " \"or\"", string, flags=re.IGNORECASE)
-        string = re.sub(" nicht", " \"nicht\"", string, flags=re.IGNORECASE)
-        string = re.sub(" not", " \"not\"", string, flags=re.IGNORECASE)
-        return string
-
-
     def search(self, search, size = SearchObject.MAX_PAGE_SIZE, status = "active", direction = "desc", page = 1, sort = None, source = None, long_json = False):
         """Searches using the search string.
             Args:
@@ -226,7 +203,6 @@ class Client:
         result = self.last_searchObj.result
         return result["content"]
 
-
     def stack_search(self, isbns):
         query = """{
                     "content": [
@@ -243,7 +219,6 @@ class Client:
                     ]
                 }
         """
-
 
     def get_next_page(self):
         """Fetches the next result page of the last search"""
@@ -344,6 +319,8 @@ class Client:
         urls = []
         types = []
 
+        return fields
+
         for field in fields:
             url = field["url"]
 
@@ -355,7 +332,7 @@ class Client:
             urls.append(url)
             types.append(result_raw.headers["Content-Type"].split(";")[0])
 
-        return len(fields), zip(types, urls)
+        return len(fields), types, urls, [x["type"] for x in fields], [x["sequenceNumber"] for x in fields]
 
     def index_search(self, field, term):
         """Returns a search index for the given term (one word)
@@ -400,3 +377,27 @@ class Client:
             raise InternalError(result["error_description"])
         else:
             return result
+
+    @staticmethod
+    def sanitize_search(string):
+        string = re.sub(" und ", " \"und\" ", string, flags=re.IGNORECASE)
+        string = re.sub(" and ", " \"and\" ", string, flags=re.IGNORECASE)
+        string = re.sub(" oder ", " \"oder\" ", string, flags=re.IGNORECASE)
+        string = re.sub(" or ", " \"or\" ", string, flags=re.IGNORECASE)
+        string = re.sub(" nicht ", " \"nicht\" ", string, flags=re.IGNORECASE)
+        string = re.sub(" not ", " \"not\" ", string, flags=re.IGNORECASE)
+
+        string = re.sub("und ", "\"und\" ", string, flags=re.IGNORECASE)
+        string = re.sub("and ", "\"and\" ", string, flags=re.IGNORECASE)
+        string = re.sub("oder ", "\"oder\" ", string, flags=re.IGNORECASE)
+        string = re.sub("or ", "\"or\" ", string, flags=re.IGNORECASE)
+        string = re.sub("nicht ", "\"nicht\" ", string, flags=re.IGNORECASE)
+        string = re.sub("not ", "\"not\" ", string, flags=re.IGNORECASE)
+
+        string = re.sub(" und", " \"und\"", string, flags=re.IGNORECASE)
+        string = re.sub(" and", " \"and\"", string, flags=re.IGNORECASE)
+        string = re.sub(" oder", " \"oder\"", string, flags=re.IGNORECASE)
+        string = re.sub(" or", " \"or\"", string, flags=re.IGNORECASE)
+        string = re.sub(" nicht", " \"nicht\"", string, flags=re.IGNORECASE)
+        string = re.sub(" not", " \"not\"", string, flags=re.IGNORECASE)
+        return string
