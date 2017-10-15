@@ -68,6 +68,17 @@ class IdTypes:
     EAN = "ean"
 
 
+class IndexSearchTypes:
+    """Available search fields for index_search method"""
+    AUTHOR = "author"
+    PUBLISHER = "publisher"
+    TITLE = "title"
+    KEYWORD = "keyword"
+    SET = "set"
+    COLLECTION = "collection"
+    IDENTIFIER = "identifier"
+
+
 class SearchObject:
     """Internal structure class"""
     MAX_PAGE_SIZE = 250
@@ -346,5 +357,46 @@ class Client:
 
         return len(fields), zip(types, urls)
 
+    def index_search(self, field, term):
+        """Returns a search index for the given term (one word)
+            Args:
+                - field: the field to search in
+                - term: the search term
+        """
 
-    # TODO def index, publisher
+        url = f"http://api.vlb.de/api/v1/index/{field}/{term}"
+
+        if (field not in [y for x, y in IndexSearchTypes.__dict__.items() if x.isupper()]):
+            raise InvalidArgumentError("Argument type must be of type IndexSearchTypes.*")
+
+        self.session.headers["Accept"] = "application/json"
+        result_raw = self.session.get(url)
+
+        if (result_raw.status_code in Client.ERROR_CODES):
+            raise InternalError(f"Response returned with error code {result_raw.status_code}\nRequest url: {url}")
+
+        result = result_raw.json()
+
+        try:
+            if (result.get("error") is not None):
+                raise InternalError(result["error_description"])
+            else:
+                raise InternalError("VLB.de returned a dict although it should return a list!")
+        except AttributeError:
+            return result_raw.json()
+
+    def get_publisher(self, mvbid):
+        """Returns data about publisher"""
+
+        url = f"https://api.vlb.de/api/v1/publisher/{mvbid}"
+
+        self.session.headers["Accept"] = "application/json"
+        result_raw = self.session.get(url)
+        if (result_raw.status_code in Client.ERROR_CODES):
+            raise InternalError(f"Response returned with error code {result_raw.status_code}")
+        result = result_raw.json()
+
+        if (result.get("error") is not None):
+            raise InternalError(result["error_description"])
+        else:
+            return result
