@@ -1,2 +1,2 @@
 # VLBdotPy
-A wrapper library for VLB.de's   API written in Python
+A wrapper library for <a href="https://vlb.de">VLB.de</a>'s   API written in Python
